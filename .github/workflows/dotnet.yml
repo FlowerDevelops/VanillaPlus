@@ -1,0 +1,89 @@
+name: .NET
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+# Prevents two pushes from computing the same version at once
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  VERSION_MAJOR: 3          # bump by hand; minor auto-increments
+  PROJECT_NAME: VanillaPlus
+  BUILD_CONFIG: Release       # change to Release for stable builds
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # create tags/releases
+      id-token: write        # attestation signing
+      attestations: write
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0       # needed for tags + commit history
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Set version
+      run: |
+        LAST=$(git tag --list "v${VERSION_MAJOR}.*" \
+          | sed -nE "s/^v${VERSION_MAJOR}\.([0-9]+)(\..*)?$/\1/p" \
+          | sort -n | tail -n 1)
+
+        if [ -z "$LAST" ]; then MINOR=0; else MINOR=$((LAST + 1)); fi
+
+        echo "VERSION=${VERSION_MAJOR}.${MINOR}.0" >> "$GITHUB_ENV"
+        echo "Next version: ${VERSION_MAJOR}.${MINOR}.0"
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore -c "$BUILD_CONFIG" -p:Version="$VERSION"
+
+    - name: Locate DLL
+      id: dll
+      run: |
+        DLL=$(find . -path "*/bin/${BUILD_CONFIG}/net6.0/${PROJECT_NAME}.dll" | head -n 1)
+        test -n "$DLL" || { echo "DLL not found"; exit 1; }
+        echo "Found: $DLL"
+        echo "path=$DLL" >> "$GITHUB_OUTPUT"
+
+    - name: Attest build (CI signature)
+      if: github.event_name == 'push'
+      uses: actions/attest-build-provenance@v2
+      with:
+        subject-path: ${{ steps.dll.outputs.path }}
+
+    - name: Create release
+      if: github.event_name == 'push'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        PREV=$(git describe --tags --abbrev=0 2>/dev/null || true)
+        if [ -n "$PREV" ]; then RANGE="$PREV..HEAD"; else RANGE="HEAD"; fi
+
+        {
+          echo "**Version:** $VERSION"
+          echo "**Build:** Dev"
+          echo "**Signed:** CI signed"
+          echo
+          echo "**Commits:**"
+          git log "$RANGE" --max-count=50 --pretty=format:'- %s (`%h`)'
+        } > notes.md
+
+        gh release create "v$VERSION" "${{ steps.dll.outputs.path }}" \
+          --target "$GITHUB_SHA" \
+          --title "v$VERSION (Dev)" \
+          --notes-file notes.md \
+          --prerelease
