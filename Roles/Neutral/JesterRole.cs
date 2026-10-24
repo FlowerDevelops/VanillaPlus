@@ -15,6 +15,7 @@ public class JesterRole : ImpostorRole, ICustomRole
     public CustomRoleConfiguration Configuration => new CustomRoleConfiguration(this)
     {
         MaxRoleCount = 1,
+        CanUseVent = true
     };
 
     public override void OnDeath(DeathReason reason)
