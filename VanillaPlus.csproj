@@ -1,0 +1,56 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>VanillaPlus</AssemblyName>
+    <RootNamespace>VanillaPlus</RootNamespace>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>NETSDK1138</NoWarn>
+
+    <!-- Your modded Among Us folder -->
+    <AmongUsDir>/home/flower/Among Us</AmongUsDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BepInEx.AutoPlugin" Version="1.1.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="$(AmongUsDir)/BepInEx/core/BepInEx.Core.dll" />
+    <Reference Include="$(AmongUsDir)/BepInEx/core/BepInEx.Unity.IL2CPP.dll" />
+    <Reference Include="$(AmongUsDir)/BepInEx/core/0Harmony.dll" />
+    <Reference Include="$(AmongUsDir)/BepInEx/core/Il2CppInterop.Runtime.dll" />
+    <Reference Include="$(AmongUsDir)/BepInEx/core/Il2CppInterop.Common.dll" />
+
+    <Reference Include="$(AmongUsDir)/BepInEx/interop/Assembly-CSharp.dll" />
+    <Reference Include="$(AmongUsDir)/BepInEx/interop/Il2Cppmscorlib.dll" />
+    <Reference Include="$(AmongUsDir)/BepInEx/interop/Il2CppSystem.dll" />
+    <Reference Include="$(AmongUsDir)/BepInEx/interop/Hazel.dll" />
+    <Reference Include="$(AmongUsDir)/BepInEx/interop/UnityEngine.CoreModule.dll" />
+    <Reference Include="$(AmongUsDir)/BepInEx/interop/UnityEngine.AudioModule.dll" />
+    <Reference Include="$(AmongUsDir)/BepInEx/interop/UnityEngine.InputLegacyModule.dll" />
+    <Reference Include="$(AmongUsDir)/BepInEx/interop/UnityEngine.UI.dll" />
+    <Reference Include="$(AmongUsDir)/BepInEx/interop/Unity.TextMeshPro.dll" />
+
+    <Reference Include="$(AmongUsDir)/BepInEx/plugins/Reactor.dll" />
+    <Reference Include="$(AmongUsDir)/BepInEx/plugins/MiraAPI.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources/**/*.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="UnityEngine.Physics2DModule">
+      <HintPath>$(AmongUsDir)/BepInEx/interop/UnityEngine.Physics2DModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CopyToPlugins" AfterTargets="Build">
+    <Copy SourceFiles="$(OutputPath)VanillaPlus.dll"
+          DestinationFolder="$(AmongUsDir)/BepInEx/plugins" />
+  </Target>
+</Project>
